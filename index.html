@@ -1,294 +1,197 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="tr">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Sürpriz</title>
-<style>
-  :root{
-    --bg:#ffffff;
-    --btnYes:#ff5a8f;
-    --btnNo:#4a4a4a;
-    --text:#111;
-  }
-  *{box-sizing:border-box}
-  html,body{height:100%; margin:0; font-family:Inter, "Segoe UI", Tahoma, sans-serif; background:var(--bg); color:var(--text)}
-  /* Kutu: butonları ortala */
-  .stage{
-    height:100vh;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    overflow:hidden;
-    position:relative;
-    background: linear-gradient(180deg,#fffafc,#fff0f3);
-  }
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Evet / Hayır Butonları — Demo</title>
+  <style>
+    :root{--btn-w:180px;--btn-h:64px}
+    html,body{height:100%;margin:0;font-family:Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial}
+    .wrap{
+      height:100%;display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,#0f172a,#071028);
+    }
+    .container{
+      display:flex;gap:28px;align-items:center;justify-content:center;/* keep symmetry */
+      width: min(90vw,900px);
+      padding:24px;
+    }
+    button{
+      --w: var(--btn-w);
+      --h: var(--btn-h);
+      width:var(--w);
+      height:var(--h);
+      border-radius:14px;
+      border:0;cursor:pointer;font-weight:700;font-size:20px;letter-spacing:0.6px;
+      box-shadow: 0 8px 24px rgba(2,6,23,0.6), inset 0 -2px 0 rgba(255,255,255,0.02);
+      transition: all 400ms cubic-bezier(.2,.9,.2,1);
+      transform-origin:center center;
+    }
+    .evet{
+      background: linear-gradient(180deg,#10b981,#059669);
+      color:white; 
+    }
+    .hayir{
+      background: linear-gradient(180deg,#ef4444,#dc2626);
+      color:white;
+    }
 
-  /* container: iki buton */
-  #container{
-    display:flex;
-    gap:36px; /* butonlar arası simetrik boşluk */
-    align-items:center;
-    justify-content:center;
-    transition:transform .4s ease;
-    z-index:5;
-  }
+    /* When the evet button is in full-screen mode */
+    .fullscreen {
+      position: fixed !important;
+      left: 0 !important;
+      top: 0 !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      border-radius: 0 !important;
+      z-index: 9999 !important;
+      display:flex;align-items:center;justify-content:center;
+      font-size: clamp(22px, 5vw, 48px) !important;
+      transition: all 600ms cubic-bezier(.2,.9,.2,1) !important;
+    }
 
-  button{
-    cursor:pointer;
-    border:none;
-    border-radius:12px;
-    padding:18px 44px;
-    font-size:1.25rem;
-    font-weight:700;
-    color:white;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.12);
-    transition:transform .35s cubic-bezier(.2,.9,.2,1), box-shadow .25s;
-    transform-origin:center center;
-    will-change:transform;
-  }
-
-  button:active{transform:scale(.98)}
-  #yes{
-    background: linear-gradient(180deg,var(--btnYes), #e5447b);
-    width:170px;
-    height:60px;
-  }
-  #no{
-    background:var(--btnNo);
-    width:170px;
-    height:60px;
-  }
-
-  /* Eğer yes butonu full-screen moduna geçerse (buton ekranı kaplar gibi) */
-  .yes-full {
-    position:fixed;
-    top:0; left:0;
-    width:100vw !important;
-    height:100vh !important;
-    border-radius:0 !important;
-    padding:0 !important;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    font-size:2.2rem !important;
-    z-index:6;
-    box-shadow:none !important;
-    transform:none !important;
-  }
-
-  /* Final overlay (mesaj + GIF + kalpler) */
-  #finalOverlay {
-    position:fixed;
-    inset:0;
-    background: linear-gradient(180deg,#fff7fb,#ffe6f0);
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    flex-direction:column;
-    gap:18px;
-    padding:30px;
-    text-align:center;
-    z-index:50;
-    opacity:0;
-    pointer-events:none;
-    transition:opacity .45s ease;
-  }
-  #finalOverlay.show { opacity:1; pointer-events:auto; }
-  #finalOverlay h1 { margin:0; color:#b30f5b; font-size:2.4rem; }
-  #finalOverlay p { margin:0; font-size:1.1rem; color:#4b2240; }
-
-  /* Stitch GIF */
-  .stitch {
-    width:220px;
-    height:auto;
-    border-radius:12px;
-    box-shadow:0 14px 40px rgba(179,15,91,0.15);
-    transform-origin:center bottom;
-    animation: floaty 2.5s ease-in-out infinite;
-  }
-  @keyframes floaty {
-    0%{transform:translateY(0)}
-    50%{transform:translateY(-14px)}
-    100%{transform:translateY(0)}
-  }
-
-  /* Kalp patlaması (confetti hearts) */
-  .heart {
-    position:absolute;
-    width:18px; height:18px;
-    background:#ff6fa1;
-    transform:rotate(-45deg);
-    border-radius:4px 4px 0 0;
-    opacity:0;
-    left:50%; top:50%;
-    pointer-events:none;
-  }
-  .heart:before, .heart:after{
-    content:"";
-    position:absolute;
-    width:18px; height:18px;
-    background:#ff6fa1;
-    border-radius:50%;
-    top:-9px; left:0;
-  }
-  .heart:after{left:9px; top:0}
-  /* küçük helper */
-  .hidden{ display:none !important; }
-
-  /* responsive */
-  @media (max-width:520px){
-    button{ padding:14px 22px; font-size:1rem; width:130px; height:50px }
-    .stitch{ width:160px }
-  }
-</style>
+    .hint{
+      position: absolute; bottom:24px; width:100%; text-align:center; color:rgba(255,255,255,0.6); font-size:14px;
+    }
+  </style>
 </head>
 <body>
-
-<div class="stage">
-  <div id="container">
-    <button id="yes">Evet</button>
-    <button id="no">Hayır</button>
+  <div class="wrap">
+    <div class="container" id="container">
+      <button id="evet" class="evet" aria-label="Evet">Evet</button>
+      <button id="hayir" class="hayir" aria-label="Hayır">Hayır</button>
+    </div>
+    <div class="hint">Hayır'a her bastığında <strong>Evet</strong> butonu 2× büyüyecek. Ekranı kaplayınca evete bas.</div>
   </div>
 
-  <!-- final overlay -->
-  <div id="finalOverlay" aria-hidden="true">
-    <h1>Seni çok seviyorum 💖</h1>
-    <p>Hayatımda olduğun için çok şanslıyım.</p>
-    <!-- stitch gif: dilediğin link ile değiştir -->
-    <img class="stitch" src="https://media.giphy.com/media/5t9IcJ3bEv6s0/giphy.gif" alt="Stitch kalpler">
-  </div>
+  <script>
+    (function(){
+      const evet = document.getElementById('evet');
+      const hayir = document.getElementById('hayir');
+      const container = document.getElementById('container');
 
-  <!-- heart particles oluşturmak için container -->
-  <div id="particles" aria-hidden="true"></div>
-</div>
+      // We'll keep a numeric scale (starts at 1)
+      let scale = 1;
+      let isFullscreen = false;
 
-<script>
-/* Mantık:
- - her 'Hayır' tıklamasında yesScale *= 2 olacak (başlangıç 1).
- - transform: scale(...) ile görsel büyütme.
- - ekranı kapsadığını tespit etmek için yes butonun bounding box'unu scale ile ölç ve
-   genişlik veya yükseklik viewport'un çoğunu kapladıysa "full" moduna geçir.
- - full moda geçince yes butonunu fixed, full-screen yap; sonra Evet'e tıklayınca finalOverlay aç.
-*/
+      // Helper to apply scale while keeping layout stable
+      function applyScale() {
+        // Use transform scale to smoothly grow the button visually
+        evet.style.transform = `scale(${scale})`;
+      }
 
-const yes = document.getElementById('yes');
-const no = document.getElementById('no');
-const container = document.getElementById('container');
-const finalOverlay = document.getElementById('finalOverlay');
-const particles = document.getElementById('particles');
+      // Check if evet now covers viewport (approx).
+      function coversViewport() {
+        const rect = evet.getBoundingClientRect();
+        // We check if width or height is >= viewport dims (with small margin)
+        return rect.width >= window.innerWidth - 1 || rect.height >= window.innerHeight - 1;
+      }
 
-let scale = 1;
-let isFull = false;
+      // When hayir is clicked
+      hayir.addEventListener('click', () => {
+        if (isFullscreen) return; // if already full, ignore
+        // Double the scale
+        scale = scale * 2;
+        applyScale();
 
-function updateYesTransform(){
-  yes.style.transform = `scale(${scale})`;
-  // gölgeleme / z-index gerektiğinde
-  if(scale > 1.1) yes.style.boxShadow = '0 20px 50px rgba(0,0,0,0.18)';
-  else yes.style.boxShadow = '';
-  checkIfCovers();
-}
+        // After the CSS transition ends, check whether to switch to absolute full-screen
+        // We'll wait for the transition duration (approx 400ms)
+        setTimeout(() => {
+          if (coversViewport()) {
+            // convert evet to a fixed fullscreen element for cleaner coverage
+            makeFullscreenEvet();
+          } else {
+            // If not fullscreen yet, optionally nudge layout so the evet stays visible
+            // Ensure container doesn't overflow horizontally by centering
+            container.scrollIntoView({behavior:'smooth',block:'center'});
+          }
+        }, 420);
+      });
 
-function checkIfCovers(){
-  // ölçüm: scaled bounding rect
-  const rect = yes.getBoundingClientRect();
-  const scaledWidth = rect.width * scale;
-  const scaledHeight = rect.height * scale;
-  const vw = window.innerWidth;
-  const vh = window.innerHeight;
+      function makeFullscreenEvet(){
+        isFullscreen = true;
+        // Compute current center to avoid jump: get rect and compute offsets
+        const rect = evet.getBoundingClientRect();
+        // Add the fullscreen class to animate to full
+        evet.classList.add('fullscreen');
+        // Reset transform so scale doesn't stack
+        evet.style.transform = '';
 
-  // eğer scaled boyut viewport'un %90'ından büyükse full moda geçir
-  if((scaledWidth >= vw*0.9 || scaledHeight >= vh*0.9) && !isFull){
-    makeYesFull();
-  }
-}
+        // Remove the other button to mimic the video effect
+        hayir.style.opacity = '0';
+        hayir.style.pointerEvents = 'none';
 
-function makeYesFull(){
-  isFull = true;
-  // butonu full-screen gösterecek şekilde düzenle
-  // önce transform'ı sıfırla, sonra class ekle
-  yes.style.transition = 'all .45s cubic-bezier(.2,.9,.2,1)';
-  // ufak gecikme ile class ekle
-  setTimeout(()=>{
-    yes.classList.add('yes-full');
-    // butonun iç metnini koru
-    yes.textContent = 'Evet';
-  }, 120);
-  // container'i gizleyebiliriz (no buton'u ortadan kaldır)
-  setTimeout(()=> {
-    no.style.visibility = 'hidden';
-    container.style.gap = '0';
-  }, 260);
-}
+        // Optional: after the animation, make sure the text shows clearly
+        setTimeout(()=>{
+          // slightly increase text weight/size is handled by CSS
+        },700);
+      }
 
-no.addEventListener('click', ()=>{
-  if(isFull) return; // full olunca daha fazla büyütme yok
-  // her tıklamada iki kat
-  scale = scale * 2;
-  // sınır koy: çok büyük olmaması için maksimum 40
-  if(scale > 40) scale = 40;
-  updateYesTransform();
-});
+      // When evet is clicked
+      evet.addEventListener('click', () => {
+        if (!isFullscreen) {
+          // If not fullscreen yet, clicking evet could do a small pulse
+          evet.animate([
+            { transform: `scale(${scale})` },
+            { transform: `scale(${scale * 0.92})` },
+            { transform: `scale(${scale})` }
+          ], { duration: 220, easing: 'ease-out' });
+          return;
+        }
 
-yes.addEventListener('click', (e)=>{
-  if(!isFull){
-    // eğer daha full değilse, küçük bir geribildirim ver
-    yes.animate([{transform:'scale(1.05)'},{transform:'scale(1)'}], {duration:220, easing:'ease-out'});
-    return;
-  }
-  // finali göster
-  finalOverlay.classList.add('show');
-  finalOverlay.setAttribute('aria-hidden','false');
-  // kalp / konfeti efektleri başlat
-  burstHearts(18);
-});
+        // Final action once evet is full-screen
+        // Here: show a small celebration and then redirect or do an action.
+        // We'll show a simple confetti-like effect using emojis.
+        fireConfetti();
+        // Example: after 1200ms, show a message
+        setTimeout(()=>{
+          evet.textContent = 'Tamam 🎉';
+          // If you want to redirect uncomment the line below (example: to YouTube)
+          // location.href = 'https://www.youtube.com/shorts/CythTNfNO-o';
+        }, 900);
+      });
 
-/* Kalp patlaması fonksiyonu */
-function burstHearts(count){
-  for(let i=0;i<count;i++){
-    createHeart(i);
-  }
-}
+      function fireConfetti(){
+        // lightweight emoji confetti positioned over the button
+        const emojis = ['🎉','✨','💥','🎊','💫'];
+        const frag = document.createDocumentFragment();
+        for(let i=0;i<18;i++){
+          const span = document.createElement('span');
+          span.textContent = emojis[Math.floor(Math.random()*emojis.length)];
+          span.style.position = 'fixed';
+          span.style.left = (50 + (Math.random()-0.5)*60) + 'vw';
+          span.style.top = (40 + Math.random()*30) + 'vh';
+          span.style.fontSize = (12 + Math.random()*34) + 'px';
+          span.style.opacity = '1';
+          span.style.pointerEvents = 'none';
+          span.style.transition = 'transform 1000ms cubic-bezier(.2,.9,.2,1), opacity 1000ms ease';
+          document.body.appendChild(span);
+          requestAnimationFrame(()=>{
+            const dx = (Math.random()-0.5)*120;
+            const dy = -180 - Math.random()*120;
+            span.style.transform = `translate(${dx}px, ${dy}px) rotate(${Math.random()*720}deg)`;
+            span.style.opacity = '0';
+          });
+          setTimeout(()=>span.remove(),1200);
+        }
+      }
 
-function rand(min,max){ return Math.random()*(max-min)+min; }
+      // Accessibility: keyboard support
+      hayir.addEventListener('keydown', (e)=>{ if(e.key==='Enter' || e.key===' ') { e.preventDefault(); hayir.click(); }});
+      evet.addEventListener('keydown', (e)=>{ if(e.key==='Enter' || e.key===' ') { e.preventDefault(); evet.click(); }});
 
-function createHeart(i){
-  const h = document.createElement('div');
-  h.className = 'heart';
-  particles.appendChild(h);
+      // Make initial sizing responsive (optional)
+      function adaptSize(){
+        // set base button size depending on viewport
+        const vw = Math.min(window.innerWidth,1200);
+        const baseW = Math.max(120, Math.min(220, vw * 0.18));
+        const baseH = Math.max(48, Math.min(84, vw * 0.06));
+        document.documentElement.style.setProperty('--btn-w', baseW + 'px');
+        document.documentElement.style.setProperty('--btn-h', baseH + 'px');
+      }
+      window.addEventListener('resize', adaptSize);
+      adaptSize();
 
-  // başlangıç pozisyon (ortaya yakın)
-  const startX = window.innerWidth/2 + rand(-40,40);
-  const startY = window.innerHeight/2 + rand(-20,20);
-  h.style.left = startX + 'px';
-  h.style.top = startY + 'px';
-
-  // hedefe doğru rastgele fırlatma
-  const angle = rand(-Math.PI, Math.PI);
-  const dist = rand(120, 380);
-  const targetX = startX + Math.cos(angle)*dist;
-  const targetY = startY + Math.sin(angle)*dist - rand(30,200);
-
-  // animasyon
-  const dur = rand(900,1600);
-  h.animate([
-    { transform: 'translate3d(0,0,0) scale(0.8)', opacity:0 },
-    { transform: `translate3d(${targetX-startX}px, ${targetY-startY}px, 0) scale(1.05)`, opacity:1, offset:0.6 },
-    { transform: `translate3d(${targetX-startX}px, ${targetY-startY}px, 0) scale(0.9)`, opacity:0 }
-  ], {
-    duration: dur,
-    easing: 'cubic-bezier(.2,.9,.2,1)'
-  });
-
-  // temizle
-  setTimeout(()=> h.remove(), dur+60);
-}
-
-/* pencere yeniden boyutlandığında kontrol et */
-window.addEventListener('resize', ()=>{
-  if(!isFull) checkIfCovers();
-});
-</script>
-
+    })();
+  </script>
 </body>
 </html>
